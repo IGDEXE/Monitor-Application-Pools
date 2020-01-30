@@ -26,8 +26,13 @@ if (Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole) {
 
 # Configurando modulos necessarios
 Configurar-Modulo "WebAdministration"
+
 # Define a localizacao
-set-Location IIS:\AppPools
+if (Test-Path "IIS:\AppPools") {
+    set-Location IIS:\AppPools   
+} else {
+    Write-Host "Pasta do IIS nao disponivel"
+}
 
 # Recebe todos os Pools
 $ApplicationPools = Get-ChildItem
