@@ -17,6 +17,13 @@ function Configurar-Modulo {
     }
 }
 
+# Verifica se o IIS esta instalado
+if (Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole) {
+    Write-Host "IIS esta configurado"
+} else {
+    Enable-WindowsOptionalFeature –online –featurename IIS-WebServerRole
+}
+
 # Configurando modulos necessarios
 Configurar-Modulo "WebAdministration"
 # Define a localizacao
