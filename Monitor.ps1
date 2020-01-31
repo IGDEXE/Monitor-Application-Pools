@@ -18,7 +18,8 @@ function Configurar-Modulo {
 }
 
 # Verifica se o IIS esta instalado
-if (Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole) {
+$iisStatus = (Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole).State
+if ($iisStatus -eq "Enable") {
     Write-Host "IIS esta configurado"
 } else {
     Enable-WindowsOptionalFeature –online –featurename IIS-WebServerRole
