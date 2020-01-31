@@ -17,6 +17,27 @@ function Configurar-Modulo {
     }
 }
 
+# Enviar informacoes para o Logic Apps
+function New-LogicAppInfo {
+    param (
+        [parameter(position=0, Mandatory=$True)]
+        $urlLogicApp,
+        [parameter(position=1, Mandatory=$True)]
+        $NomePool
+    )
+
+    # Configura a informacao
+    $infoPool = [PSCustomObject]@{
+        NomePool      = "$NomePool"
+    }
+
+    # Create a line that creates a JSON from this object
+    $JSONInfo = $infoPool | ConvertTo-Json 
+
+    # this line sends the email through the logic app
+    Invoke-RestMethod -Method POST -Uri $urlLogicApp -Body $JSONInfo -ContentType 'application/json'
+}
+
 # Verifica se o IIS esta instalado
 $iisStatus = (Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole).State
 if ($iisStatus -eq "Enabled") {
@@ -27,7 +48,6 @@ if ($iisStatus -eq "Enabled") {
 
 # Configurando modulos necessarios
 Configurar-Modulo "WebAdministration"
-Configurar-Modulo "AzureRM.LogicApp"
 
 # Define a localizacao
 if (Test-Path "IIS:\AppPools") {
@@ -36,13 +56,8 @@ if (Test-Path "IIS:\AppPools") {
     Write-Host "Pasta do IIS nao disponivel"
 }
 
-# Faz login no Azure RM
-Connect-AzureRmAccount
-
-# Configuracoes do Azure RM
-$nomeRG = "partsunlimited"
-$nomeLogApp = "Monitor500"
-$nomeTrigger = "RECURRENCE"
+# Configuracoes Logic App
+$urlLogicApp = "URL do Logic App"
 
 # Recebe todos os Pools
 $ApplicationPools = Get-ChildItem
@@ -57,7 +72,7 @@ foreach ($AppPool in $ApplicationPools) {
         if($ApplicationPoolStatus -ne "Started") {
             Write-Host "-----> $ApplicationPoolName esta parado."
             try {
-                Start-AzureRmLogicApp -ResourceGroupName "$nomeRG" -Name "$nomeLogApp" -TriggerName "$nomeTrigger" # Inicia o Logical App
+                New-LogicAppInfo "$urlLogicApp" "$ApplicationPoolName" 
                 Start-WebAppPool -Name $ApplicationPoolName
                 Write-Host "-----> $ApplicationPoolName foi reiniciado."
             }
