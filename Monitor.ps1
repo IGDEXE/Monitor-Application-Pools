@@ -111,5 +111,8 @@ $urlLogicApp = "URL do Logic App"
 # Recebe todos os Pools
 $ApplicationPools = Get-ChildItem -Path "IIS:\AppPools"
 
-# Faz o procedimento
-Set-PoolUp "$ApplicationPools" "$urlLogicApp"
+# Faz o procedimento dentro de um loop
+while ($true) {
+    Set-PoolUp "$ApplicationPools" "$urlLogicApp"
+    Start-Sleep -Seconds 60 # Reinicia a cada minuto
+}
