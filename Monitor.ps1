@@ -48,10 +48,10 @@ function New-LogicAppInfo {
 function Set-PoolUp {
     param (
         [parameter(position=0, Mandatory=$True)]
-        $ApplicationPools,
-        [parameter(position=1, Mandatory=$True)]
         $urlLogicApp
     )
+    # Recebe todos os Pools
+    $ApplicationPools = Get-ChildItem -Path "IIS:\AppPools"
     
     # Verifica na lista
     foreach ($AppPool in $ApplicationPools) {
@@ -106,13 +106,11 @@ if (Test-Path "IIS:\AppPools") {
 }
 
 # Configuracoes Logic App
-$urlLogicApp = "URL do Logic App"
-
-# Recebe todos os Pools
-$ApplicationPools = Get-ChildItem -Path "IIS:\AppPools"
+$urlLogicApp = "URL Logic Apps"
 
 # Faz o procedimento dentro de um loop
+Clear-Host
 while ($true) {
-    Set-PoolUp "$ApplicationPools" "$urlLogicApp"
-    Start-Sleep -Seconds 60 # Reinicia a cada minuto
+    Set-PoolUp "$urlLogicApp"
+    Start-Sleep -Seconds 10 # Reinicia a cada minuto
 }
