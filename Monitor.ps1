@@ -44,6 +44,46 @@ function New-LogicAppInfo {
     Invoke-RestMethod -Method POST -Uri $urlLogicApp -Body $JSONInfo -ContentType 'application/json'
 }
 
+# Fazer a validacao dos Pools
+function Set-PoolUp {
+    param (
+        [parameter(position=0, Mandatory=$True)]
+        $ApplicationPools,
+        [parameter(position=1, Mandatory=$True)]
+        $urlLogicApp
+    )
+    
+    # Verifica na lista
+    foreach ($AppPool in $ApplicationPools) {
+        try {
+            $ApplicationPoolName = $AppPool.Name
+            $ApplicationPoolStatus = $AppPool.state
+            Write-Host "$ApplicationPoolName -> $ApplicationPoolStatus"
+        
+            if($ApplicationPoolStatus -ne "Started") {
+                Write-Host "-----> $ApplicationPoolName esta parado."
+                try {
+                    Start-WebAppPool -Name $ApplicationPoolName
+                    $horarioReinicio = Get-Date
+                    New-LogicAppInfo "$urlLogicApp" "$ApplicationPoolName" "O Pool foi reiniciado em: $horarioReinicio"
+                    Write-Host "-----> $ApplicationPoolName foi reiniciado."
+                }
+                catch {
+                    $ErrorMessage = $_.Exception.Message # Recebe o erro
+                    New-LogicAppInfo "$urlLogicApp" "$ApplicationPoolName" "Ocorreu um erro ao reiniciar o Pool: $ErrorMessage"
+                    Write-Host "Ocorreu um erro ao reiniciar o $ApplicationPoolName"
+                    Write-Host "Error: $ErrorMessage"
+                }    
+            } 
+        }
+        catch {
+            $ErrorMessage = $_.Exception.Message # Recebe o erro
+            Write-Host "Ocorreu um erro ao verificar $ApplicationPoolName"
+            Write-Host "Error: $ErrorMessage"
+        }
+    }
+}
+
 # Verifica se o IIS esta instalado
 $iisStatus = (Get-WindowsOptionalFeature -Online -FeatureName IIS-WebServerRole).State
 if ($iisStatus -eq "Enabled") {
@@ -57,43 +97,19 @@ Configurar-Modulo "WebAdministration"
 
 # Define a localizacao
 if (Test-Path "IIS:\AppPools") {
-    set-Location IIS:\AppPools   
+    Write-Host "Pasta do IIS esta disponivel"   
 } else {
     Write-Host "Pasta do IIS nao disponivel"
+    Write-Host "Nao podemos continuar ate que ela esteja disponivel"
+    Pause
+    exit
 }
 
 # Configuracoes Logic App
 $urlLogicApp = "URL do Logic App"
 
 # Recebe todos os Pools
-$ApplicationPools = Get-ChildItem
+$ApplicationPools = Get-ChildItem -Path "IIS:\AppPools"
 
-# Verifica na lista
-foreach ($AppPool in $ApplicationPools) {
-    try {
-        $ApplicationPoolName = $AppPool.Name
-        $ApplicationPoolStatus = $AppPool.state
-        Write-Host "$ApplicationPoolName -> $ApplicationPoolStatus"
-    
-        if($ApplicationPoolStatus -ne "Started") {
-            Write-Host "-----> $ApplicationPoolName esta parado."
-            try {
-                Start-WebAppPool -Name $ApplicationPoolName
-                $horarioReinicio = Get-Date
-                New-LogicAppInfo "$urlLogicApp" "$ApplicationPoolName" "O Pool foi reiniciado em: $horarioReinicio"
-                Write-Host "-----> $ApplicationPoolName foi reiniciado."
-            }
-            catch {
-                $ErrorMessage = $_.Exception.Message # Recebe o erro
-                New-LogicAppInfo "$urlLogicApp" "$ApplicationPoolName" "Ocorreu um erro ao reiniciar o Pool: $ErrorMessage"
-                Write-Host "Ocorreu um erro ao reiniciar o $ApplicationPoolName"
-                Write-Host "Error: $ErrorMessage"
-            }    
-        } 
-    }
-    catch {
-        $ErrorMessage = $_.Exception.Message # Recebe o erro
-        Write-Host "Ocorreu um erro ao verificar $ApplicationPoolName"
-        Write-Host "Error: $ErrorMessage"
-    }
-}
+# Faz o procedimento
+Set-PoolUp "$ApplicationPools" "$urlLogicApp"
