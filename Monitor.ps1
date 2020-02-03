@@ -23,12 +23,18 @@ function New-LogicAppInfo {
         [parameter(position=0, Mandatory=$True)]
         $urlLogicApp,
         [parameter(position=1, Mandatory=$True)]
-        $NomePool
+        $nomePool,
+        [parameter(position=2)]
+        $maisInfos,
+        [parameter(position=3)]
+        $servidor = $env:computername
     )
 
     # Configura a informacao
     $infoPool = [PSCustomObject]@{
-        NomePool      = "$NomePool"
+        NomePool      = "$nomePool"
+        Obs           = "$maisInfos"
+        Servidor      = "$servidor"
     }
 
     # Create a line that creates a JSON from this object
@@ -72,13 +78,15 @@ foreach ($AppPool in $ApplicationPools) {
         if($ApplicationPoolStatus -ne "Started") {
             Write-Host "-----> $ApplicationPoolName esta parado."
             try {
-                New-LogicAppInfo "$urlLogicApp" "$ApplicationPoolName" 
                 Start-WebAppPool -Name $ApplicationPoolName
+                $horarioReinicio = Get-Date
+                New-LogicAppInfo "$urlLogicApp" "$ApplicationPoolName" "O Pool foi reiniciado em: $horarioReinicio"
                 Write-Host "-----> $ApplicationPoolName foi reiniciado."
             }
             catch {
                 $ErrorMessage = $_.Exception.Message # Recebe o erro
-                Write-Host "Ocorreu um erro ao reiniciar o Pool $ApplicationPoolName"
+                New-LogicAppInfo "$urlLogicApp" "$ApplicationPoolName" "Ocorreu um erro ao reiniciar o Pool: $ErrorMessage"
+                Write-Host "Ocorreu um erro ao reiniciar o $ApplicationPoolName"
                 Write-Host "Error: $ErrorMessage"
             }    
         } 
